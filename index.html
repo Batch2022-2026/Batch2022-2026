@@ -755,7 +755,7 @@
             { name: "Karyl Love Resulta", message: "The quiet genius who helped everyone with Math.", photo: "ka.jpeg" },
             { name: "Ruben Jr. Mag-aso", message: "The funniest person in class.", photo: "ru.jpeg" },
             { name: "Elaine Mea Gerodias", message: "Basketball captain.", photo: "el.jpeg" },
-            { name: "Dominador Ambatang", message: "Photojournalism", photo: "do.jpg" },
+            { name: "Dominador Ambatang", message: "Cameramen", photo: "do.jpg" },
             { name: "Jaeyah Mae Palermo", message: "Mother of all", photo: "je.jpeg" }
         ]
         
@@ -907,54 +907,73 @@ window.addEventListener('scroll', () => {
   });
 });
 
-        var submitted = false;
+    var submitted = false;
+        
+    const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/1Wj31YOnYDAKN7z7KMO7CNEarDe7J2MliWpAQTqTzqVQ/export?format=csv';
 
-const sheetCSVUrl = 'https://docs.google.com/forms/d/e/1FAIpQLScGT2oc3Q6-0MpgZlBxo4ph7nRjca4iQuP5lodVkvpXq-mGVg/viewform?usp=publish-editor';
-
-function showSuccess() {
-    if(submitted) {
-        document.getElementById('submitBtn').style.display = 'none';
-        document.getElementById('successMessage').classList.remove('hidden');
-        document.querySelector('form[target="hidden_iframe"]').reset();
-        setTimeout(loadMessages, 3000); 
+    function showSuccess() {
+        if(submitted) {
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('successMessage').classList.remove('hidden');
+            // Reset the form so they can't spam the same message
+            document.querySelector('form[target="hidden_iframe"]').reset();
+            // Reload the wall after 3 seconds so their new message appears
+            setTimeout(loadMessages, 3000); 
+        }
     }
-}
 
-async function loadMessages() {
-    if(!sheetCSVUrl || sheetCSVUrl === 'PASTE_YOUR_CSV_LINK_HERE') return;
-    try {
-        const response = await fetch(sheetCSVUrl);
-        const data = await response.text();
-        const rows = data.split('\n').slice(1); 
+    async function loadMessages() {
         const container = document.getElementById('wall-container');
-        container.innerHTML = ''; 
+        if (!container) return;
 
-        rows.reverse().forEach(row => { // reverse to show newest first
-            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (cols.length >= 3) {
-                const name = cols[1].replace(/"/g, '').trim(); 
-                const message = cols[2].replace(/"/g, '').trim();
+        try {
+            // Fetch the data from your spreadsheet
+            const response = await fetch(sheetCSVUrl);
+            const data = await response.text();
+            
+            // Split into rows and remove the header (Timestamp, Name, Message)
+            const rows = data.split('\n').slice(1); 
+            
+            container.innerHTML = ''; 
 
-                const card = document.createElement('div');
-                card.className = "fade-up bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all";
-                card.innerHTML = `
-                    <i class="fa-solid fa-quote-left text-amber-400/20 text-2xl mb-2"></i>
-                    <p class="text-zinc-300 mb-4">${message}</p>
-                    <div class="flex items-center gap-2">
-                        <div class="h-px w-4 bg-amber-400/50"></div>
-                        <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">${name}</span>
-                    </div>
-                `;
-                container.appendChild(card);
+            // We reverse() so the newest messages appear at the top
+            rows.reverse().forEach(row => {
+                // This regex splits by comma but handles commas inside quotes correctly
+                const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                // Ensure the row has at least Name and Message columns
+                if (cols.length >= 3) {
+                    const name = cols[1].replace(/"/g, '').trim(); 
+                    const message = cols[2].replace(/"/g, '').trim();
+
+                    // Create the HTML card for each message
+                    const card = document.createElement('div');
+                    card.className = "fade-up bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all";
+                    card.innerHTML = `
+                        <i class="fa-solid fa-quote-left text-amber-400/20 text-2xl mb-2"></i>
+                        <p class="text-zinc-300 mb-4">${message}</p>
+                        <div class="flex items-center gap-2">
+                            <div class="h-px w-4 bg-amber-400/50"></div>
+                            <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">${name}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                }
+            });
+
+            // If no messages were found yet
+            if (container.innerHTML === '') {
+                container.innerHTML = '<p class="text-zinc-500 text-center col-span-full italic">No memories shared yet. Be the first!</p>';
             }
-        });
-    } catch (error) {
-        console.error("Error loading messages:", error);
-    }
-}
 
-// Call loadMessages after the page is ready
-window.addEventListener('DOMContentLoaded', loadMessages);
+        } catch (error) {
+            console.error("Error loading messages:", error);
+            container.innerHTML = '<p class="text-red-400 text-center col-span-full italic">Failed to load memories. Check back soon!</p>';
+        }
+    }
+
+    // Load the messages as soon as the page opens
+    window.addEventListener('DOMContentLoaded', loadMessages);
         
         window.onload = launchWebsite
     </script>
