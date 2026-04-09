@@ -908,16 +908,15 @@ window.addEventListener('scroll', () => {
 });
 
     var submitted = false;
-        
+
+    // YOUR DATA LINK
     const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/1Wj31YOnYDAKN7z7KMO7CNEarDe7J2MliWpAQTqTzqVQ/export?format=csv';
 
     function showSuccess() {
         if(submitted) {
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('successMessage').classList.remove('hidden');
-            // Reset the form so they can't spam the same message
             document.querySelector('form[target="hidden_iframe"]').reset();
-            // Reload the wall after 3 seconds so their new message appears
             setTimeout(loadMessages, 3000); 
         }
     }
@@ -926,27 +925,31 @@ window.addEventListener('scroll', () => {
         const container = document.getElementById('wall-container');
         if (!container) return;
 
+        // Show a loading state so it's not pitch black
+        container.innerHTML = '<p class="text-zinc-500 text-center col-span-full animate-pulse">Loading memories...</p>';
+
         try {
-            // Fetch the data from your spreadsheet
             const response = await fetch(sheetCSVUrl);
             const data = await response.text();
             
-            // Split into rows and remove the header (Timestamp, Name, Message)
-            const rows = data.split('\n').slice(1); 
+            // Split into rows and remove the header
+            const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1); 
             
             container.innerHTML = ''; 
 
-            // We reverse() so the newest messages appear at the top
+            if (rows.length === 0) {
+                container.innerHTML = '<p class="text-zinc-500 text-center col-span-full italic">No messages yet. Be the first!</p>';
+                return;
+            }
+
             rows.reverse().forEach(row => {
-                // This regex splits by comma but handles commas inside quotes correctly
+                // Regex to handle commas inside quotes
                 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 
-                // Ensure the row has at least Name and Message columns
                 if (cols.length >= 3) {
                     const name = cols[1].replace(/"/g, '').trim(); 
                     const message = cols[2].replace(/"/g, '').trim();
 
-                    // Create the HTML card for each message
                     const card = document.createElement('div');
                     card.className = "fade-up bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all";
                     card.innerHTML = `
@@ -960,20 +963,14 @@ window.addEventListener('scroll', () => {
                     container.appendChild(card);
                 }
             });
-
-            // If no messages were found yet
-            if (container.innerHTML === '') {
-                container.innerHTML = '<p class="text-zinc-500 text-center col-span-full italic">No memories shared yet. Be the first!</p>';
-            }
-
         } catch (error) {
             console.error("Error loading messages:", error);
-            container.innerHTML = '<p class="text-red-400 text-center col-span-full italic">Failed to load memories. Check back soon!</p>';
+            container.innerHTML = '<p class="text-red-400/50 text-center col-span-full italic">Failed to load the wall. Check your connection.</p>';
         }
     }
 
-    // Load the messages as soon as the page opens
     window.addEventListener('DOMContentLoaded', loadMessages);
+    
         
         window.onload = launchWebsite
     </script>
