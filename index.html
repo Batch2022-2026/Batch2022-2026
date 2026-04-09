@@ -910,66 +910,109 @@ window.addEventListener('scroll', () => {
     var submitted = false;
 
     // YOUR DATA LINK
-    const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS3iQrnpKxCjf_mYViCXf9fw3JXMwahcf4rlGz4MHU4zWeD4oULNoeTMyvRTecQoGQnwby8GZbX_AU0/pub?gid=1740820647&single=true&output=csv';
+const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS3iQrnpKxCjf_mYViCXf9fw3JXMwahcf4rlGz4MHU4zWeD4oULNoeTMyvRTecQoGQnwby8GZbX_AU0/pub?output=csv';
 
-    function showSuccess() {
-        if(submitted) {
-            document.getElementById('submitBtn').style.display = 'none';
-            document.getElementById('successMessage').classList.remove('hidden');
-            document.querySelector('form[target="hidden_iframe"]').reset();
-            setTimeout(loadMessages, 3000); 
-        }
+function showSuccess() {
+    if (submitted) {
+        document.getElementById('submitBtn').style.display = 'none';
+        document.getElementById('successMessage').classList.remove('hidden');
+        document.querySelector('form[target="hidden_iframe"]').reset();
+
+        // reload messages after submit
+        setTimeout(loadMessages, 3000);
     }
+}
 
-    async function loadMessages() {
-        const container = document.getElementById('wall-container');
-        if (!container) return;
+async function loadMessages() {
+    const container = document.getElementById('wall-container');
+    if (!container) return;
 
-        // Show a loading state so it's not pitch black
-        container.innerHTML = '<p class="text-zinc-500 text-center col-span-full animate-pulse">Loading memories...</p>';
+    // Loading state
+    container.innerHTML = `
+        <p class="text-zinc-500 text-center col-span-full animate-pulse">
+            Loading memories...
+        </p>
+    `;
 
-        try {
-            const response = await fetch(sheetCSVUrl);
-            const data = await response.text();
-            
-            // Split into rows and remove the header
-            const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1); 
-            
-            container.innerHTML = ''; 
+    try {
+        const response = await fetch(sheetCSVUrl);
+        const data = await response.text();
 
-            if (rows.length === 0) {
-                container.innerHTML = '<p class="text-zinc-500 text-center col-span-full italic">No messages yet. Be the first!</p>';
-                return;
+        const rows = data
+            .split(/\r?\n/)
+            .filter(row => row.trim() !== "")
+            .slice(1); // remove header
+
+        container.innerHTML = '';
+
+        // No messages
+        if (rows.length === 0) {
+            container.innerHTML = `
+                <p class="text-zinc-500 text-center col-span-full italic">
+                    No messages yet. Be the first!
+                </p>
+            `;
+            return;
+        }
+
+        rows.reverse().forEach(row => {
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+
+            let name = '';
+            let message = '';
+
+            // ✅ FIX: flexible column handling
+            if (cols.length >= 3) {
+                name = cols[1];       // with timestamp
+                message = cols[2];
+            } else if (cols.length >= 2) {
+                name = cols[0];       // no timestamp
+                message = cols[1];
+            } else {
+                return; // skip invalid row
             }
 
-            rows.reverse().forEach(row => {
-                // Regex to handle commas inside quotes
-                const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                
-                if (cols.length >= 3) {
-                    const name = cols[1].replace(/"/g, '').trim(); 
-                    const message = cols[2].replace(/"/g, '').trim();
+            // Clean values
+            name = name.replace(/"/g, '').trim();
+            message = message.replace(/"/g, '').trim();
 
-                    const card = document.createElement('div');
-                    card.className = "fade-up bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all";
-                    card.innerHTML = `
-                        <i class="fa-solid fa-quote-left text-amber-400/20 text-2xl mb-2"></i>
-                        <p class="text-zinc-300 mb-4">${message}</p>
-                        <div class="flex items-center gap-2">
-                            <div class="h-px w-4 bg-amber-400/50"></div>
-                            <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">${name}</span>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                }
-            });
-        } catch (error) {
-            console.error("Error loading messages:", error);
-            container.innerHTML = '<p class="text-red-400/50 text-center col-span-full italic">Failed to load the wall. Check your connection.</p>';
-        }
+            // Skip empty entries
+            if (!name || !message) return;
+
+            const card = document.createElement('div');
+            card.className = "fade-up bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all";
+
+            card.innerHTML = `
+                <i class="fa-solid fa-quote-left text-amber-400/20 text-2xl mb-2"></i>
+                <p class="text-zinc-300 mb-4">${message}</p>
+                <div class="flex items-center gap-2">
+                    <div class="h-px w-4 bg-amber-400/50"></div>
+                    <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">
+                        ${name}
+                    </span>
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("Error loading messages:", error);
+
+        container.innerHTML = `
+            <p class="text-red-400 text-center col-span-full italic">
+                ❌ Failed to load messages.<br>
+                Check your connection or Google Sheet.
+            </p>
+        `;
     }
+}
 
-    window.addEventListener('DOMContentLoaded', loadMessages);
+// Load on start
+window.addEventListener('DOMContentLoaded', loadMessages);
+
+// OPTIONAL: auto refresh every 10 seconds (you can remove if you want)
+setInterval(loadMessages, 10000);
     
         
         window.onload = launchWebsite
