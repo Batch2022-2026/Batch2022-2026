@@ -85,6 +85,40 @@
             background: #f59e0b;
             border-radius: 9999px;
         }
+
+        .floating-hearts {
+    position: fixed;
+    bottom: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.floating-hearts.left {
+    left: 10px;
+}
+
+.floating-hearts.right {
+    right: 10px;
+}
+
+.heart {
+    position: absolute;
+    bottom: 0;
+    font-size: 20px;
+    animation: floatUp 4s linear forwards;
+    opacity: 0.8;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-350px) translateX(-20px) scale(1.5);
+        opacity: 0;
+    }
+}
     </style>
 </head>
 <body class="tailwind-ready bg-zinc-950 text-white overflow-x-hidden">
@@ -177,11 +211,6 @@
             
             <div class="mt-16 text-sm opacity-70 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
                 <div>Scroll to begin the journey ↓</div>
-                <div class="flex gap-2">
-                    <i class="fa-solid fa-heart text-amber-400"></i>
-                    <i class="fa-solid fa-heart text-amber-400"></i>
-                    <i class="fa-solid fa-heart text-amber-400"></i>
-                </div>
             </div>
         </div>
         
@@ -493,6 +522,9 @@
         </div>
     </div>
 
+    <div class="floating-hearts left"></div>
+    <div class="floating-hearts right"></div>
+
     <script>
         // Tailwind script initialization
         function initializeTailwind() {
@@ -746,6 +778,32 @@
             
             console.log('%c✅ Your responsive 4-Year Journey website is ready!', 'color:#f59e0b; font-family:Playfair Display; font-size:18px')
         }
+
+        function createHeart() {
+    const heart = document.createElement("div");
+    heart.classList.add("heart");
+
+    const emojis = ["❤️", "💖", "💙", "✨"];
+    heart.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+
+    heart.style.fontSize = (16 + Math.random() * 20) + "px";
+
+    // randomly choose left or right side
+    const side = Math.random() > 0.5 ? "left" : "right";
+    const container = document.querySelector(`.floating-hearts.${side}`);
+
+    // random horizontal movement
+    heart.style.left = Math.random() * 30 + "px";
+
+    container.appendChild(heart);
+
+    setTimeout(() => {
+        heart.remove();
+    }, 4000);
+}
+
+// infinite loop
+setInterval(createHeart, 700);
         
         window.onload = launchWebsite
     </script>
