@@ -22,6 +22,15 @@
         
         .tailwind-ready { font-family: 'Poppins', system-ui, sans-serif; }
         .title-font { font-family: 'Playfair Display', serif; }
+
+        .body {
+            animation: fadeIn 1s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
         
         .hero-bg {
             background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.75)), url('IMG_20260407_143712.jpg');
@@ -43,15 +52,17 @@
         .glow {
             box-shadow: 0 0 25px -5px rgb(245 158 11);
         }
-        
+
         .modal {
-            animation: modalPop 0.3s ease-out;
-        }
-        
-        @keyframes modalPop {
-            0% { transform: scale(0.95); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+    transform: scale(1);
+}
         
         .typewriter {
             overflow: hidden;
@@ -118,6 +129,17 @@
         transform: translateY(-350px) translateX(-20px) scale(1.5);
         opacity: 0;
     }
+}
+
+        .fade-up {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s ease;
+}
+
+.fade-up.show {
+  opacity: 1;
+  transform: translateY(0);
 }
     </style>
 </head>
@@ -754,19 +776,34 @@
         }
         
         // Modal
+
         function openModal(src) {
-            document.getElementById('modal-image').src = src
-            document.getElementById('image-modal').classList.remove('hidden')
-            document.getElementById('image-modal').classList.add('flex')
-            document.body.style.overflow = 'hidden' // prevent scrolling behind modal
-        }
-        
+    const modal = document.getElementById('image-modal');
+
+    document.getElementById('modal-image').src = src;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    setTimeout(() => {
+        modal.querySelector('.modal').classList.add('show');
+    }, 10);
+
+    document.body.style.overflow = 'hidden';
+}
+
         function closeModal() {
-            const modal = document.getElementById('image-modal')
-            modal.classList.add('hidden')
-            modal.classList.remove('flex')
-            document.body.style.overflow = 'auto'
-        }
+    const modal = document.getElementById('image-modal');
+    const content = modal.querySelector('.modal');
+
+    content.classList.remove('show');
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = 'auto';
+    }, 300);
+}
         
         // Main initialization
         function launchWebsite() {
@@ -804,6 +841,17 @@
 
 // infinite loop
 setInterval(createHeart, 700);
+
+        const elements = document.querySelectorAll('.fade-up');
+
+window.addEventListener('scroll', () => {
+  elements.forEach(el => {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight - 50) {
+      el.classList.add('show');
+    }
+  });
+});
         
         window.onload = launchWebsite
     </script>
