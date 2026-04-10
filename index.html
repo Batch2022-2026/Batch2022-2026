@@ -858,7 +858,7 @@
             
             console.log('%c✅ Your responsive 4-Year Journey website is ready!', 'color:#f59e0b; font-family:Playfair Display; font-size:18px')
         }
-
+        
         function createHeart() {
     const heart = document.createElement("div");
     heart.classList.add("heart");
@@ -895,7 +895,11 @@ window.addEventListener('scroll', () => {
     }
   });
 });
+    
 
+        window.onload = launchWebsite
+    </script>
+    <script type="module">
   // 1. Import Firebase Modules
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -973,9 +977,6 @@ window.addEventListener('scroll', () => {
       wallContainer.appendChild(card);
     });
   });
-    
-
-        window.onload = launchWebsite
     </script>
 </body>
 </html>
