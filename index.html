@@ -478,48 +478,37 @@
             </div>
         </div>
     </section>
+    
 
-    <section id="guestbook" class="max-w-7xl mx-auto px-6 py-20 bg-zinc-950">
+<section id="guestbook" class="max-w-7xl mx-auto px-6 py-20 bg-zinc-950">
     <div class="text-center mb-12">
         <div class="inline-flex items-center gap-2 text-amber-400 mb-3">
             <i class="fa-solid fa-pen-nib"></i>
             <span class="uppercase tracking-widest text-sm font-medium">Digital Time Capsule</span>
         </div>
         <h2 class="title-font text-4xl md:text-5xl">Class Guestbook</h2>
-        <p class="text-amber-200 mt-4 max-w-xl mx-auto">Leave a message for the batch. Your words will appear on the wall below!</p>
+        <p class="text-amber-200 mt-4 max-w-xl mx-auto text-sm md:text-base">Leave a message for the batch. Your words will appear on the wall below instantly!</p>
     </div>
 
     <div class="max-w-2xl mx-auto mb-20">
-        <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(typeof submitted !== 'undefined' && submitted) { showSuccess(); }"></iframe>
-        
-        <form action="https://docs.google.com/forms/d/e/1FAIpQLScGT2oc3Q6-0MpgZlBxo4ph7nRjca4iQuP5lodVkvpXq-mGVg/formResponse" 
-              method="post" 
-              target="hidden_iframe" 
-              onsubmit="submitted=true;" 
-              class="space-y-6 bg-zinc-900/50 p-8 rounded-3xl border border-amber-400/20 backdrop-blur-sm">
-            
+        <form id="messageForm" class="space-y-6 bg-zinc-900/50 p-6 md:p-8 rounded-3xl border border-amber-400/20 backdrop-blur-sm">
             <div>
                 <label class="block text-amber-400 text-sm mb-2 font-medium">Your Name</label>
-                <input type="text" name="entry.719253574" required 
+                <input type="text" id="senderName" required 
                     class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 transition-colors"
                     placeholder="Enter your name...">
             </div>
-            
             <div>
                 <label class="block text-amber-400 text-sm mb-2 font-medium">Message for the Class</label>
-                <textarea name="entry.1703642215" required rows="4"
+                <textarea id="senderMessage" required rows="4"
                     class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 transition-colors"
                     placeholder="Write a memory or a wish..."></textarea>
             </div>
-            
             <button type="submit" id="submitBtn"
                 class="w-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold py-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20">
                 Post to the Wall
             </button>
-            
-            <p id="successMessage" class="hidden text-center text-amber-400 font-medium mt-4">
-                ✨ Your message has been saved! Refresh in a minute to see it on the wall.
-            </p>
+            <p id="statusMsg" class="hidden text-center text-amber-400 font-medium mt-4"></p>
         </form>
     </div>
 
@@ -527,8 +516,8 @@
         <div class="text-center mb-12">
             <h3 class="title-font text-3xl text-amber-400">Voices of Our Batch</h3>
         </div>
-        <div id="wall-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-white">
-            <p class="text-center col-span-full text-zinc-600 animate-pulse italic">Gathering memories from the wall...</p>
+        <div id="wall-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <p class="text-center col-span-full text-zinc-600 animate-pulse italic">Loading memories...</p>
         </div>
     </div>
 </section>
@@ -907,114 +896,86 @@ window.addEventListener('scroll', () => {
   });
 });
 
-    var submitted = false;
+  // 1. Import Firebase Modules
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // YOUR DATA LINK
-const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3iQrnpKxCjf_mYViCXf9fw3JXMwahcf4rlGz4MHU4zWeD4oULNoeTMyvRTecQoGQnwby8GZbX_AU0/pub?output=csv";
+  // 2. Your Firebase Configuration (Provided by you)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAqbIPh_p0flHy6UgQCdDceKZHmxSoFjL0",
+    authDomain: "batch2022-2026-wall.firebaseapp.com",
+    projectId: "batch2022-2026-wall",
+    storageBucket: "batch2022-2026-wall.firebasestorage.app",
+    messagingSenderId: "676542444649",
+    appId: "1:676542444649:web:90f6152a12cfe1ef421ef8",
+    measurementId: "G-ZGE15XENE4"
+  };
 
-function showSuccess() {
-    if (submitted) {
-        document.getElementById('submitBtn').style.display = 'none';
-        document.getElementById('successMessage').classList.remove('hidden');
-        document.querySelector('form[target="hidden_iframe"]').reset();
+  // 3. Initialize Firebase & Firestore
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-        // reload messages after submit
-        setTimeout(loadMessages, 3000);
-    }
-}
+  // 4. Submission Logic
+  const form = document.getElementById('messageForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusMsg = document.getElementById('statusMsg');
 
-async function loadMessages() {
-    const container = document.getElementById('wall-container');
-    if (!container) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Posting...";
 
-    // Loading state
-    container.innerHTML = `
-        <p class="text-zinc-500 text-center col-span-full animate-pulse">
-            Loading memories...
-        </p>
-    `;
+    const name = document.getElementById('senderName').value;
+    const message = document.getElementById('senderMessage').value;
 
     try {
-        const response = await fetch(sheetCSVUrl);
-        const data = await response.text();
-
-        const rows = data
-            .split(/\r?\n/)
-            .filter(row => row.trim() !== "")
-            .slice(1); // remove header
-
-        container.innerHTML = '';
-
-        // No messages
-        if (rows.length === 0) {
-            container.innerHTML = `
-                <p class="text-zinc-500 text-center col-span-full italic">
-                    No messages yet. Be the first!
-                </p>
-            `;
-            return;
-        }
-
-        rows.reverse().forEach(row => {
-            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-
-            let name = '';
-            let message = '';
-
-            // ✅ FIX: flexible column handling
-            if (cols.length >= 3) {
-                name = cols[1];       // with timestamp
-                message = cols[2];
-            } else if (cols.length >= 2) {
-                name = cols[0];       // no timestamp
-                message = cols[1];
-            } else {
-                return; // skip invalid row
-            }
-
-            // Clean values
-            name = name.replace(/"/g, '').trim();
-            message = message.replace(/"/g, '').trim();
-
-            // Skip empty entries
-            if (!name || !message) return;
-
-            const card = document.createElement('div');
-            card.className = "fade-up bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all";
-
-            card.innerHTML = `
-                <i class="fa-solid fa-quote-left text-amber-400/20 text-2xl mb-2"></i>
-                <p class="text-zinc-300 mb-4">${message}</p>
-                <div class="flex items-center gap-2">
-                    <div class="h-px w-4 bg-amber-400/50"></div>
-                    <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">
-                        ${name}
-                    </span>
-                </div>
-            `;
-
-            container.appendChild(card);
-        });
-
+      await addDoc(collection(db, "messages"), {
+        name: name,
+        message: message,
+        timestamp: serverTimestamp()
+      });
+      form.reset();
+      statusMsg.innerText = "✨ Successfully posted!";
+      statusMsg.classList.remove('hidden');
+      setTimeout(() => statusMsg.classList.add('hidden'), 4000);
     } catch (error) {
-        console.error("Error loading messages:", error);
-
-        container.innerHTML = `
-            <p class="text-red-400 text-center col-span-full italic">
-                ❌ Failed to load messages.<br>
-                Check your connection or Google Sheet.
-            </p>
-        `;
+      console.error("Firebase Error:", error);
+      alert("Error posting! Make sure your Firestore Rules are set to 'allow read, write: if true'");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "Post to the Wall";
     }
-}
+  });
 
-window.addEventListener('DOMContentLoaded', () => {
-    launchWebsite();   // load everything else
-    loadMessages();    // load message wall AFTER
-});
+  // 5. Real-time Wall Listener
+  const wallContainer = document.getElementById('wall-container');
+  const q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
 
-// OPTIONAL: auto refresh every 10 seconds
-setInterval(loadMessages, 10000);
+  onSnapshot(q, (snapshot) => {
+    wallContainer.innerHTML = '';
+    if (snapshot.empty) {
+      wallContainer.innerHTML = '<p class="text-zinc-500 text-center col-span-full italic">No messages yet. Be the first!</p>';
+      return;
+    }
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const card = document.createElement('div');
+      card.className = "bg-zinc-900/40 border border-amber-400/10 p-6 rounded-2xl hover:bg-zinc-900 transition-all fade-up show";
+      card.innerHTML = `
+        <i class="fa-solid fa-quote-left text-amber-400/20 text-2xl mb-2"></i>
+        <p class="text-zinc-300 mb-4">${data.message}</p>
+        <div class="flex items-center gap-2">
+            <div class="h-px w-4 bg-amber-400/50"></div>
+            <span class="text-amber-400 font-bold text-xs uppercase tracking-wider">${data.name}</span>
+        </div>
+      `;
+      wallContainer.appendChild(card);
+    });
+  });
+    
+
+        window.onload = launchWebsite
     </script>
 </body>
 </html>
