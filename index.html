@@ -1008,14 +1008,13 @@ async function loadMessages() {
     }
 }
 
-// Load on start
-window.addEventListener('DOMContentLoaded', loadMessages);
+window.addEventListener('DOMContentLoaded', () => {
+    launchWebsite();   // load everything else
+    loadMessages();    // load message wall AFTER
+});
 
-// OPTIONAL: auto refresh every 10 seconds (you can remove if you want)
+// OPTIONAL: auto refresh every 10 seconds
 setInterval(loadMessages, 10000);
-    
-        
-        window.onload = launchWebsite
     </script>
 </body>
 </html>
